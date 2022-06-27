@@ -106,21 +106,22 @@ module Rack
       env['PATH_INFO'] = PathNormalizer.normalize_path(env['PATH_INFO'])
       request = Rack::Attack::Request.new(env)
 
+      # NOTE (akiomik): blocklistで弾かれるリクエストについてもthrottleのチェックを通過するようにする
       if configuration.safelisted?(request)
         @app.call(env)
-      elsif configuration.blocklisted?(request)
-        # Deprecated: Keeping blocklisted_response for backwards compatibility
-        if configuration.blocklisted_response
-          configuration.blocklisted_response.call(env)
-        else
-          configuration.blocklisted_responder.call(request)
-        end
       elsif configuration.throttled?(request)
         # Deprecated: Keeping throttled_response for backwards compatibility
         if configuration.throttled_response
           configuration.throttled_response.call(env)
         else
           configuration.throttled_responder.call(request)
+        end
+      elsif configuration.blocklisted?(request)
+        # Deprecated: Keeping blocklisted_response for backwards compatibility
+        if configuration.blocklisted_response
+          configuration.blocklisted_response.call(env)
+        else
+          configuration.blocklisted_responder.call(request)
         end
       else
         configuration.tracked?(request)
